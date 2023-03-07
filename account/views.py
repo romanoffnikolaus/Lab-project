@@ -15,15 +15,16 @@ class RegistrationView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
+
         is_mentor = serializer.validated_data.get('is_mentor')
-        message = 'Аккаунт создан'
+
         if is_mentor:
-            serializer = serializers.MentorRegistrationSerializer(
-                data=request.data, context={'request': request})
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(message)
-        return Response(message)
+            mentor_serializer = serializers.MentorRegistrationSerializer(data=request.data)
+            mentor_serializer.is_valid(raise_exception=True)
+            mentor_serializer.save()
+            return Response({'message': 'Аккаунт ментора успешно создан. Ожидайте письма с подтверждением регистрации'}, status=200)
+        return Response({'message': 'Аккаунт успешно создан. Ожидайте письма с подтверждением регистрации'}, status=200)
 
 
 class ActivationView(APIView):
