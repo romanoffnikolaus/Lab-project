@@ -32,28 +32,29 @@ class RegistrationSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
-        send_activation_code_celery(user.email, user.activation_code)
+        send_activation_code_celery.delay(user.email, user.activation_code)
         return user
 
 
 class MentorRegistrationSerializer(serializers.ModelSerializer):
+    password_confirm = serializers.CharField(
+        min_length=4, required=True, write_only=True)
     experience = serializers.ChoiceField(
             required=True,
             help_text='Каким видом преподавания вы занимались раньше?',
             choices=(
-                ('лично, частным образом', 'лично, частным образом'),
-                ('лично, профессионально', 'лично, профессионально'),
-                ('онлайн', 'онлайн'),
-                ('другое', 'другое'),
+                ('Лично, частным образом', 'Лично, частным образом'),
+                ('Лично, профессионально', 'Лично, профессионально'),
+                ('Онлайн', 'Онлайн'),
+                ('Другое', 'Другое'),
             )
         )
-    audience = serializers.ChoiceField(
-            required=True,
+    community = serializers.ChoiceField(required=True,
             help_text='Есть ли у вас аудитория, с которой вы хотите поделиться своим курсом?',
             choices=(
-                ('в настоящий момент нет', 'в настоящий момент нет'),
-                ('у меня маленькая аудитория', 'у меня маленькая аудитория'),
-                ('у меня достаточная аудитория', 'у меня достаточная аудитория'),
+                ('В настоящий момент нет', 'В настоящий момент нет'),
+                ('У меня маленькая аудитория', 'У меня маленькая аудитория'),
+                ('У меня достаточная аудитория', 'У меня достаточная аудитория'),
             )
     )
 
@@ -64,14 +65,22 @@ class MentorRegistrationSerializer(serializers.ModelSerializer):
             'first_name',
             'last_name',
             'email',
+            'password_confirm',
             'password',
             'is_mentor',
             'experience',
-            'audience',
+            'community'
         )
-
-    def update(self, validated_data):
-        user = User.objects.update(**validated_data)
+    def validate(self, attrs):
+        password = attrs.get('password')
+        password_confirm = attrs.pop('password_confirm')
+        if password != password_confirm:
+            raise serializers.ValidationError('Пароли не совпадают')
+        return attrs
+    
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        send_activation_code_celery.delay(user.email, user.activation_code)
         return user
 
 
@@ -94,14 +103,13 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         new_password = attrs.get("new_password")
         new_password_confirm = attrs.pop('new_password_confirm')
         if new_password != new_password_confirm:
-            raise serializers.ValidationError('Password don\'t match')
+            raise serializers.ValidationError('Пароли не совпадают!')
         return attrs
 
     def validate_old_password(self, old_password):
         user = self.context['request'].user
-
         if not user.check_password(old_password):
-            raise serializers.ValidationError('You entered wrong password')
+            raise serializers.ValidationError('Введен некорректный пароль')
         return old_password
 
     def set_new_password(self):
@@ -116,14 +124,13 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
     def validate_email(self, email):
         if not User.objects.filter(email=email).exists():
-            raise serializers.ValidationError("User doesn't exist")
+            raise serializers.ValidationError("Пользователь с такими данными не найден")
         return email
 
-    def send_verification_code(self):
-        email = self.validated_data.get("email")
+    def send_verification_email(self):
+        email = self.validated_data.get('email')
         user = User.objects.get(email=email)
-        user.activation_code = get_random_string(10)
-        user.save()
+        user.create_activation_code()
         send_mail(
             'Восстановление пароля',
             f'Ваш код восстановления: {user.activation_code}',
@@ -133,29 +140,26 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
 
 class ForgotPasswordCompleteSerializer(serializers.Serializer):
-    password = serializers.CharField(required=True, min_length=5)
-    password_confirm = serializers.CharField(required=True, min_length=5)
+    code = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(min_length=4, required=True)
+    password_confirm = serializers.CharField(min_length=4, required=True)
 
     def validate(self, attrs):
-        email = self.context.get('email')
-        activation_code = self.context.get('activation_code')
-        password = attrs.get("password")
-        password_confirm = attrs.get("password_confirm")
-
-        try:
-            User.objects.get(email=email, activation_code=activation_code)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("This user doesn't exist")
-
-        if password != password_confirm:
-            raise serializers.ValidationError("Password don't match")
-
+        email = attrs.get('email')
+        code = attrs.get('code')
+        password1 = attrs.get('password')
+        password2 = attrs.get('password_confirm')
+        if not User.objects.filter(email=email, activation_code=code).exists():
+            raise serializers.ValidationError('Пользователь не найден или введен неправильный код')
+        if password1 != password2:
+            raise serializers.ValidationError('Пароли не совпадают')
         return attrs
 
     def set_new_password(self):
-        email = self.context.get('email')
-        password = self.validated_data.get("password")
-        user = User.objects.filter(email=email).first()
+        email = self.validated_data.get('email')
+        password = self.validated_data.get('password')
+        user = User.objects.get(email=email)
         user.set_password(password)
         user.activation_code = ''
         user.save()

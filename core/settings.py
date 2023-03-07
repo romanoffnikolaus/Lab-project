@@ -129,11 +129,18 @@ REST_FRAMEWORK = {
     ),
 }
 
-JWT_AUTH = {
-    'JWT_RESPONSE_PAYLOAD_HANDLER': 'path.to.custom_response_handler',
-    'JWT_EXPIRATION_DELTA': timedelta(minutes=99999999),
-    'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
-}
+# email.backend settings
+EMAIL_BACKEND = config('EMAIL_BACKEND')
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_PORT = config('EMAIL_PORT')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+
+# JWTtoken settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=100000),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30), }
 
 # celery settings
 CELERY_BROKER_URL = "redis://localhost:6379"

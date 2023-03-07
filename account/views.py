@@ -5,7 +5,6 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 
 from . import serializers
-from .utils import send_activation_code
 
 
 User = get_user_model()
@@ -17,16 +16,14 @@ class RegistrationView(generics.CreateAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         is_mentor = serializer.validated_data.get('is_mentor')
+        message = 'Аккаунт создан'
         if is_mentor:
-            serializer = serializers.MentorRegistrationSerializer(data=request.data)
+            serializer = serializers.MentorRegistrationSerializer(
+                data=request.data, context={'request': request})
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            email = serializer.validated_data.get("email")
-            user = User.objects.get(email=email)
-            send_activation_code(user.email, user.activation_code)
-            return Response(serializer.data)
-        super().post(request, *args, **kwargs)
-        return Response(serializer.data)
+            return Response(message)
+        return Response(message)
 
 
 class ActivationView(APIView):
@@ -35,11 +32,11 @@ class ActivationView(APIView):
             email=email,
             activation_code=activation_code).first()
         if not user:
-            return Response('User not found', status=400)
+            return Response('Пользователь не найден', status=400)
         user.activation_code = ''
         user.is_active = True
         user.save()
-        return Response('Account is activated', status=200)
+        return Response('Активирован', status=200)
 
 
 class ChangePasswordView(APIView):
@@ -51,9 +48,9 @@ class ChangePasswordView(APIView):
         )
         if serializer.is_valid(raise_exception=True):
             serializer.set_new_password()
-            message = 'You successfully changed your password'
+            message = 'Смена пароля прошла успешно'
         else:
-            message = 'You entered wrong password'
+            message = 'Введен некорректный пароль'
         return Response(message)
 
 
@@ -61,15 +58,15 @@ class ForgotPasswordView(APIView):
     def post(self, request):
         serializer = serializers.ForgotPasswordSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            serializer.send_verification_code()
-            return Response("We've sent you activation code to your email")
+            serializer.send_verification_email()
+            return Response('Вам выслали сообщение для восстановления пароля')
 
 
 class ForgotPasswordCompleteView(APIView):
-    def post(self, request, email, activation_code):
-        context = {'email': email, "activation_code": activation_code}
-        serializer = serializers.ForgotPasswordCompleteSerializer(
-            data=request.data, context=context)
+    def post(self, request):
+        serializer = serializers.ForgotPasswordCompleteSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.set_new_password()
-            return Response('Your password succesfully changed')
+            return Response(
+                'Ваш пароль успешно восстановлен'
+            )

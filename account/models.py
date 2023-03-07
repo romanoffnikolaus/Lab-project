@@ -28,20 +28,21 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
+    objects = UserManager()
+
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=50, unique=True)
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
     experience = models.CharField(max_length=50, blank=True)
-    audience = models.CharField(max_length=50, blank=True)
+    community = models.CharField(max_length=50, blank=True)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    
     is_active = models.BooleanField(default=False)
     is_mentor = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(auto_now_add=True)
     slug = models.SlugField(max_length=50, unique=True)
     activation_code = models.CharField(max_length=10, null=True)
-
-    objects = UserManager()
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
