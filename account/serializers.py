@@ -4,6 +4,7 @@ from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 
 from .tasks import send_activation_code_celery
+from .models import Profile
 
 
 User = get_user_model()
@@ -51,7 +52,7 @@ class MentorRegistrationSerializer(serializers.ModelSerializer):
                 ('Другое', 'Другое'),
             )
         )
-    community = serializers.ChoiceField(required=True,
+    audience = serializers.ChoiceField(required=True,
             help_text='Есть ли у вас аудитория, с которой вы хотите поделиться своим курсом?',
             choices=(
                 ('В настоящий момент нет', 'В настоящий момент нет'),
@@ -64,7 +65,7 @@ class MentorRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'experience',
-            'community'
+            'audience'
         )
     def update(self, validated_data):
         user = User.objects.update(**validated_data)
@@ -72,6 +73,7 @@ class MentorRegistrationSerializer(serializers.ModelSerializer):
 
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
+    
     old_password = serializers.CharField(
         min_length=4, required=True
     )
@@ -150,3 +152,47 @@ class ForgotPasswordCompleteSerializer(serializers.Serializer):
         user.set_password(password)
         user.activation_code = ''
         user.save()
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.slug')
+    language = serializers.ChoiceField(
+            required=True,
+            help_text='Выберете Ваш основной язык',
+            choices=(
+                ('Ru', 'Ru'),
+                ('En', 'En'),
+                ('Kg', 'Kg')
+            )
+        )
+    
+    class Meta:
+        model = Profile
+        fields = '__all__'
+
+    def validate_website(self, website_url):
+        if not website_url.startswith('www.') or not website_url.startswith('https://'):
+            raise serializers.ValidationError(
+                'Введен некорректный адрес вебсайта. Ссылка должна начинаться с "www." или "https://"')
+        return website_url
+
+    def validate_twitter_url(self, twitter_url):
+        if not twitter_url.startswith('https://twitter.com/'):
+            raise serializers.ValidationError('Введенна некорректная ссылка на профиль в твиттер. Пример: "https://twitter.com/Krutoy"')
+        return twitter_url
+    
+    def validate_website(self, facebook_url):
+        if not facebook_url.startswith('https://www.facebook.com/'):
+            raise serializers.ValidationError('Введена некорректная ссылка на facebook. Пример: "https://www.facebook.com/Krutoy"')
+        return facebook_url
+    
+    def validate_twitter_url(self, youtube_url):
+        if not youtube_url.startswith('https://www.youtube.com/@'):
+            raise serializers.ValidationError('Введенна некорректная ссылка на ютуб канал. Пример: "https://www.youtube.com/@Krutoy"')
+        return youtube_url
+    
+    def validate_twitter_url(self, linkedin_url):
+        if not linkedin_url.startswith('https://www.linkedin.com/in/'):
+            raise serializers.ValidationError('Введенна некорректная ссылка на Linked_in. Пример: "https://www.linkedin.com/in/Krutoy"')
+        return linkedin_url
+    

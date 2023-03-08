@@ -1,10 +1,13 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
+from drf_yasg.utils import swagger_auto_schema
 
 from . import serializers
+from . import models
 
 
 User = get_user_model()
@@ -43,6 +46,7 @@ class ActivationView(APIView):
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(request_body=serializers.ChangePasswordSerializer)
     def post(self, request):
         serializer = serializers.ChangePasswordSerializer(
             data=request.data, context={'request': request}
@@ -56,6 +60,7 @@ class ChangePasswordView(APIView):
 
 
 class ForgotPasswordView(APIView):
+    @swagger_auto_schema(request_body=serializers.ForgotPasswordSerializer)
     def post(self, request):
         serializer = serializers.ForgotPasswordSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -64,6 +69,7 @@ class ForgotPasswordView(APIView):
 
 
 class ForgotPasswordCompleteView(APIView):
+    @swagger_auto_schema(request_body=serializers.ForgotPasswordCompleteSerializer)
     def post(self, request):
         serializer = serializers.ForgotPasswordCompleteSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -71,3 +77,8 @@ class ForgotPasswordCompleteView(APIView):
             return Response(
                 'Ваш пароль успешно восстановлен'
             )
+
+
+class ProfileView(ModelViewSet):
+    queryset = models.Profile.objects.all()
+    serializer_class = serializers.ProfileSerializer

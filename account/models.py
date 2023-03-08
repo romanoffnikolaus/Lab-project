@@ -35,7 +35,7 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=50, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
     experience = models.CharField(max_length=50, blank=True)
-    community = models.CharField(max_length=50, blank=True)
+    audience = models.CharField(max_length=50, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     
     is_active = models.BooleanField(default=False)
@@ -59,3 +59,23 @@ class User(AbstractUser):
         code = get_random_string(10)
         self.activation_code = code
         self.save()
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    competence = models.CharField(max_length=255, blank=True)
+    language = models.CharField(max_length=2, blank=True)
+    site_url = models.URLField(max_length=255, blank=True)
+    twitter_url = models.URLField(max_length=255, blank=True)
+    facebook_url = models.URLField(max_length=255, blank=True)
+    linkedin_url = models.URLField(max_length=255, blank=True)
+    youtube_url  = models.URLField(max_length=255, blank=True)
+    image = models.ImageField(upload_to="media/", blank=True)
+    is_hidden = models.BooleanField(default=False)
+    is_hidden_courses = models.BooleanField(default=False)
+    promotions = models.BooleanField(default=False)
+    mentor_ads = models.BooleanField(default=False)
+    email_ads = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.user.username

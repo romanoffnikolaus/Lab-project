@@ -1,8 +1,12 @@
-from django.urls import path
+from django.urls import path, include
 from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshView)
+from rest_framework.routers import DefaultRouter
 
 from . import views
 
+
+router = DefaultRouter()
+router.register('profile', views.ProfileView)
 
 urlpatterns = [
     path('register/', views.RegistrationView.as_view(), name="user_registration"),
@@ -11,5 +15,6 @@ urlpatterns = [
     path('forgot-password/', views.ForgotPasswordView.as_view(), name="forgot_password"),
     path('forgot_password_complete/',views.ForgotPasswordCompleteView.as_view()),
     path('login/', TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path('refresh/', TokenRefreshView.as_view(), name="token_refresh")
+    path('refresh/', TokenRefreshView.as_view(), name="token_refresh"),
+    path('', include(router.urls))
 ]
