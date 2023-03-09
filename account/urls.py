@@ -16,5 +16,6 @@ urlpatterns = [
     path('forgot_password_complete/',views.ForgotPasswordCompleteView.as_view()),
     path('login/', TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path('refresh/', TokenRefreshView.as_view(), name="token_refresh"),
+    path('logout/', views.APILogoutView.as_view(), name='auth_logout'),
     path('', include(router.urls))
 ]

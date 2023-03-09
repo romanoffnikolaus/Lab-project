@@ -19,7 +19,8 @@ services:
       - .env
     command: >
       sh -c "python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+             python manage.py runserver 0.0.0.0:8000 &&
+             python manage.py test"
 
     volumes:
       - .:/app
@@ -28,7 +29,18 @@ services:
     depends_on:
       - db
       - redis
-    
+      - test
+
+
+  test:
+    build:
+      context: .
+    container_name: test
+    env_file:
+      - .env
+    command: >
+      sh -c "python manage.py test"
+   
 
   redis:
     image: redis:alpine
@@ -48,5 +60,6 @@ services:
       - db
       - redis
       - app
+      - test
 
   
