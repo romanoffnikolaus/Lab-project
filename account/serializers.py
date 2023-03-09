@@ -1,9 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
-from rest_framework_simplejwt.tokens import RefreshToken, TokenError
-from django.utils.text import gettext_lazy as _
 
 from .tasks import send_activation_code_celery
 from .models import Profile
@@ -158,7 +155,7 @@ class ForgotPasswordCompleteSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.slug')
+    user = serializers.ReadOnlyField(source='user.id')
     language = serializers.ChoiceField(
             required=True,
             help_text='Выберете Ваш основной язык',
@@ -172,6 +169,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = '__all__'
+    
+    def create(self,validated_data):
+        request = self.context.get('request')
+        user = request.user
+        profile = Profile.objects.create(user=user, **validated_data)
+        return profile
 
     def validate_website(self, website_url):
         if not website_url.startswith('www.') or not website_url.startswith('https://'):
@@ -189,13 +192,13 @@ class ProfileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Введена некорректная ссылка на facebook. Пример: "https://www.facebook.com/Krutoy"')
         return facebook_url
     
-    def validate_twitter_url(self, youtube_url):
+    def validate_youtube_url(self, youtube_url):
         if not youtube_url.startswith('https://www.youtube.com/@'):
             raise serializers.ValidationError('Введенна некорректная ссылка на ютуб канал. Пример: "https://www.youtube.com/@Krutoy"')
         return youtube_url
     
-    def validate_twitter_url(self, linkedin_url):
-        if not linkedin_url.startswith('https://www.linkedin.com/in/'):
+    def validate_linkedin_url(self, linkedin_url):
+        if not linkedin_url.startswith('https://www.linkedin.com/'):
             raise serializers.ValidationError('Введенна некорректная ссылка на Linked_in. Пример: "https://www.linkedin.com/in/Krutoy"')
         return linkedin_url
     

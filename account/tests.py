@@ -1,5 +1,5 @@
 from rest_framework.test import APITestCase, APIRequestFactory, force_authenticate
-from .models import User
+from .models import User, Profile
 from . import views
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -16,7 +16,9 @@ class UserTest(APITestCase):
             password = 'pimp',
             is_active = True
         )
-        
+        profile = [Profile(user=self.user, language = 'En')]
+        Profile.objects.bulk_create(profile)
+
     def test_register(self):
         data = {
             'email':'new_user@gmail.com',
@@ -153,3 +155,64 @@ class UserTest(APITestCase):
         view = views.APILogoutView.as_view()
         response = view(request)
         assert response.data == 'Всего доброго!'
+
+    def test_create_profile(self):
+        self.user = User.objects.create_user(
+            email = 'case@gmail.com',
+            username = 'case_user',
+            first_name = 'name',
+            last_name = 'last_name',
+            password = 'pimp',
+            is_active = True
+        )
+        data = {
+        "competence": "Some competence",
+        "language": "En",
+        "site_url": "https://example.com",
+        "twitter_url": "https://twitter.com/",
+        "facebook_url": "https://www.facebook.com/example",
+        "linkedin_url": "https://www.linkedin.com/in/Krutoy",
+        "youtube_url": "https://www.youtube.com/@example",
+        "is_hidden": False,
+        "is_hidden_courses": False,
+        "promotions": False,
+        "mentor_ads": False,
+        "email_ads": False
+        }
+        request = self.factory.post('profile/', data, format='json')
+        force_authenticate(request, user=self.user)
+        view = views.ProfileView.as_view({'post': 'create'})
+        response = view(request)
+        assert response.status_code == 201
+        assert response.data['language'] == data['language'] == 'En'
+
+    def test_delete(self):
+        user = User.objects.get(username=self.user.username)
+        profile = Profile.objects.all()[0].id
+        request = self.factory.delete(f'profile/{profile}/')
+        force_authenticate(request, user=user)
+        view = views.ProfileView.as_view({'delete':'destroy'})
+        response = view(request, pk=profile)
+        assert response.status_code == 204
+    
+    def test_retrieve(self):
+        profile = Profile.objects.all()[0].id
+        request = self.factory.get(f'stuffs/{profile}')
+        view = views.ProfileView.as_view({'get':'retrieve'})
+        response = view(request, pk=profile)
+        assert response.status_code == 200
+    
+    def test_partial_update(self):
+        user = User.objects.all()[0]
+        profile = Profile.objects.all()[0].id
+        data = {
+        "competence": "Some competence",
+        "language": "Ru",
+        }
+        request = self.factory.patch(f'profile/{profile}',data,format='json')
+        force_authenticate(request, user=user)
+        view = views.ProfileView.as_view({'patch':'partial_update'})
+        response = view(request, pk=profile)
+        print(response.data)
+        assert response.status_code == 200
+        assert response.data['language'] == data['language'] == 'Ru'
