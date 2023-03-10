@@ -176,8 +176,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         profile = Profile.objects.create(user=user, **validated_data)
         return profile
 
-    def validate_website(self, website_url):
-        if not website_url.startswith('www.') or not website_url.startswith('https://'):
+    def validate_site_url(self, website_url):
+        if not website_url.startswith('https://'):
             raise serializers.ValidationError(
                 'Введен некорректный адрес вебсайта. Ссылка должна начинаться с "www." или "https://"')
         return website_url
@@ -187,7 +187,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Введенна некорректная ссылка на профиль в твиттер. Пример: "https://twitter.com/Krutoy"')
         return twitter_url
     
-    def validate_website(self, facebook_url):
+    def validate_facebook_url(self, facebook_url):
         if not facebook_url.startswith('https://www.facebook.com/'):
             raise serializers.ValidationError('Введена некорректная ссылка на facebook. Пример: "https://www.facebook.com/Krutoy"')
         return facebook_url

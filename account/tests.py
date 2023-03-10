@@ -213,6 +213,5 @@ class UserTest(APITestCase):
         force_authenticate(request, user=user)
         view = views.ProfileView.as_view({'patch':'partial_update'})
         response = view(request, pk=profile)
-        print(response.data)
         assert response.status_code == 200
         assert response.data['language'] == data['language'] == 'Ru'
