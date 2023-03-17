@@ -1,51 +1,44 @@
-version: '3.8'
+version: '3.3' #версия докеркомпоза
 
-services:
-
+services: #билд контейнеров для приложений использованных в проекте
+  
   db:
     image: postgres:14.7
     container_name: db
     env_file:
       - .env
-    
-     
-  app:
-    build:
+    volumes: 
+      - db:/var/lib/postgresql/data
+
+
+  main_api:
+    build: #можно использовать чтобы забилдить из докерфайла а не из готового образа
       dockerfile: Dockerfile
       context: .
-    container_name: django
+    container_name: main_api
+    volumes: #указывает директории где хранятся статические файлы
+      - static_volume:/app/static
+      - media_volume:/app/media
+    command: >  # выполнение команды sh -c указывает, что команду нужно отправить в терминал
+          sh -c "python manage.py collectstatic --noinput &&
+                 python manage.py migrate &&
+                 gunicorn --bind 0.0.0.0:8000 core.wsgi"
     env_file:
       - .env
-    volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
-    command: >
-      sh -c "python manage.py collectstatic --noinput &&
-             python manage.py migrate &&
-             gunicorn --bind 0.0.0.0:8000 core.wsgi"
     ports:
-      - "8000:8000"
-    depends_on:
-      - db 
+      - 8000:8000
+    expose:
+      - 8000
+    depends_on: #указывает после каких приложений будет билдится этот контейнер, запустится только в случае успешных пусков всего что там указано
+      - db
       - redis
       - test
+    
 
-
-  nginx:
-    build:
-      dockerfile: ./Dockerfile
-      context: ./docker/nginx/
-    container_name: nginx
-    image: nginx
-    volumes:
-      - static_volume:/app/static
-      - media_volume:/app/media
-    depends_on:
-      - app
-    ports:
-      - "${NGINX_EXTERNAL_PORT}:80"
-
-
+  redis:
+    image: redis:alpine
+    hostname: redis
+  
 
   test:
     build:
@@ -57,28 +50,51 @@ services:
       sh -c "python manage.py test"
     depends_on:
       - db
-   
-
-  redis:
-    image: redis:alpine
-    hostname: redis
+    
 
   celery:
-    build:
+    build: 
       context: .
-    command: celery -A core worker -l info
-    volumes:
-      - .:/app 
     env_file:
       - .env
+    command: >
+      sh -c 'celery -A core worker -l info'
+    volumes:
+      - .:/app
     links:
       - redis
     depends_on:
       - db
       - redis
-      - app
       - test
+      - main_api
 
-volumes:
+
+  nginx:
+    build: 
+      dockerfile: Dockerfile
+      context: ./docker/nginx
+    container_name: nginx
+    image: nginx
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - main_api
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
+
+
+volumes: 
   static_volume:
   media_volume:
+  db:
+
+
+
+
+
+    
+  
