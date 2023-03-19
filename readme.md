@@ -16,7 +16,7 @@ CELERY_BROKER_URL = "redis://localhost:6379"
 
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
 
-And in .env: POSTGRES_HOST= localhost.
+And in .env: POSTGRES_HOST= localhost
 ```
 
 You can use following make commands:
