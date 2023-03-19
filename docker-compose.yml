@@ -1,6 +1,6 @@
-version: '3.3' #версия докеркомпоза
+version: '3.3'
 
-services: #билд контейнеров для приложений использованных в проекте
+services:
   
   db:
     image: postgres:14.7
@@ -12,14 +12,14 @@ services: #билд контейнеров для приложений испо�
 
 
   main_api:
-    build: #можно использовать чтобы забилдить из докерфайла а не из готового образа
+    build:
       dockerfile: Dockerfile
       context: .
     container_name: main_api
-    volumes: #указывает директории где хранятся статические файлы
+    volumes:
       - static_volume:/app/static
       - media_volume:/app/media
-    command: >  # выполнение команды sh -c указывает, что команду нужно отправить в терминал
+    command: >
           sh -c "python manage.py collectstatic --noinput &&
                  python manage.py migrate &&
                  gunicorn --bind 0.0.0.0:8000 core.wsgi"
@@ -29,7 +29,7 @@ services: #билд контейнеров для приложений испо�
       #- 8000:8000
     expose:
       - 8000
-    depends_on: #указывает после каких приложений будет билдится этот контейнер, запустится только в случае успешных пусков всего что там указано
+    depends_on: 
       - db
       - redis
       - test
@@ -77,6 +77,9 @@ services: #билд контейнеров для приложений испо�
     container_name: nginx
     image: nginx
     volumes:
+      #- ./certbot/conf:/etc/letsencrypt
+      #- ./certbot/www:/var/www/certbot
+      #- etc-letsencrypt:/etc/letcsencrypt
       - static_volume:/app/static
       - media_volume:/app/media
     depends_on:
@@ -85,6 +88,15 @@ services: #билд контейнеров для приложений испо�
       - "80:80"
       - "443:443"
     restart: always
+
+  #certbot:
+    #image: certbot/certbot
+    #container_name: certbot
+    #volumes: 
+      #- ./certbot/conf:/etc/letsencrypt
+      #- ./certbot/www:/var/www/certbot
+    #command: certonly --webroot -w /var/www/certbot --force-renewal --email savethedaycompany@gmail.com -d savethedayteam.com --agree-tos
+
 
 
 volumes: 

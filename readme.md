@@ -5,8 +5,9 @@ Content
 * [Description](#Description)
 * [Make commands](#Makecommands)
 * [Installation](#Installation)
+* [Docker running](#Dockerrunning)
 ## Description
-At the moment you can use account functions only. Registration, login/logout, change and recovery your password + CRUD for your account with "IsOwnerorAdminOnly" permission. Project biuilt with using Docker (gunicorn, nginx, project_app, test cases as an individual applications with dependencies. But now i spent all quotas for buying domains on google cloud service. Maybe in future i buy domaine for that project and SSL for HTTPS trafic. In directory you can find nginx.conf file for https config for nginx with using docker and certbot_app as a comment for connecting and saving ssl certificate)
+At the moment you can use account functions only. Registration, login/logout, change and recovery your password + CRUD for your account with "IsOwnerorAdminOnly" permission. Project biuilt with using Docker (gunicorn, nginx, project_app, test cases as an individual applications with dependencies. But now i spent all quotas for buying domains on google cloud service. In future i'am going to buy domaine for that project and connect SSL for HTTPS trafic. In directory you can find nginx.conf file for https config for nginx with using docker and certbot_app as a comment for connecting and saving ssl certificate). For SSL certificate you should run docker-compose up -d nginx in deamon and after that docker-compose up -d certbot. After running certbot container you can check a result of certbot container. If you see successful status and should change nginx.conf settings for https (use nginx.conf_for using_https in project direction). HTTPS is avaliable. And you can include sertificate direction in docker volumes.
 
 ## Make commands
 If you want run project without docker, you should change celery setiings:
@@ -76,9 +77,11 @@ python manage.py runserver
 # use second terminal
 python3 -m celery -A core worker -l info
 ```
-Visit our website: [MakersOverflow](https://makersoverflow.net/)
 
 
+
+
+## Docker running
 You can run server with usind docker 
 
 1. Install Docker + Docker-compose
