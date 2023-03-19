@@ -57,7 +57,7 @@ python3 -m venv <venv_name>
 ```bash
 pip install -r requirements.txt
 ```
-5. Make changes into database by making migrations
+5. Make changes into database by making migrations. Create psql database first of all.
 ```bash
 # First step
 python manage.py makemigrations

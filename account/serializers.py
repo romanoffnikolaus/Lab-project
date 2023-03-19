@@ -4,6 +4,8 @@ from django.core.mail import send_mail
 
 from .tasks import send_activation_code_celery
 from .models import Profile
+from .tasks import delete_activation_code
+from django.utils import timezone
 
 
 User = get_user_model()
@@ -74,15 +76,9 @@ class MentorRegistrationSerializer(serializers.ModelSerializer):
 
 class ChangePasswordSerializer(serializers.ModelSerializer):
     
-    old_password = serializers.CharField(
-        min_length=4, required=True
-    )
-    new_password = serializers.CharField(
-        min_length=4, required=True
-    )
-    new_password_confirm = serializers.CharField(
-        min_length=4, required=True
-    )
+    old_password = serializers.CharField(min_length=4, required=True)
+    new_password = serializers.CharField(min_length=4, required=True)
+    new_password_confirm = serializers.CharField(min_length=4, required=True)
 
     class Meta:
         model = User
@@ -120,6 +116,9 @@ class ForgotPasswordSerializer(serializers.Serializer):
         email = self.validated_data.get('email')
         user = User.objects.get(email=email)
         user.create_activation_code()
+        user.activation_code_created_at = timezone.now()
+        user.save()
+        delete_activation_code.apply_async(args=[user.id], countdown=120)
         send_mail(
             'Восстановление пароля',
             f'Ваш код восстановления: {user.activation_code}',

@@ -2,8 +2,8 @@ from django.db import models
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.utils.crypto import get_random_string
-from django.utils import timezone
 from slugify import slugify
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -43,8 +43,9 @@ class User(AbstractUser):
     is_mentor = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     slug = models.SlugField(max_length=50, unique=True)
+
     activation_code = models.CharField(max_length=10, null=True)
-    activation_code_expiration = models.DateTimeField(null=True)
+    activation_code_created_at = models.DateTimeField(null=True)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
@@ -60,6 +61,7 @@ class User(AbstractUser):
     def create_activation_code(self):
         code = get_random_string(10)
         self.activation_code = code
+        self.activation_code_created_at = timezone.now()
         self.save()
 
 
