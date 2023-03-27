@@ -6,6 +6,6 @@ ENV PYTHONUNBUFFERED 1
 COPY . /app
 WORKDIR /app
 
-RUN mkdir /app/static & mkdir /app/media & mkdir /app/logs
+RUN mkdir /app/static & mkdir /app/media
 
 RUN pip install -r requirements.txt
