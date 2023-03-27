@@ -84,9 +84,19 @@ python3 -m celery -A core worker -l info
 ## Docker running
 You can run server with usind docker 
 
+If you want run project without docker, you should change celery setiings:
+
+```bash
+CELERY_BROKER_URL = "redis://redis:6379"
+
+CELERY_RESULT_BACKEND = "redis://redis:6379"
+
+And inside .env: POSTGRES_HOST= db
+```
+
 1. Install Docker + Docker-compose
 
-2. Create .env file. And create logs folder.
+2. Create .env file. And create "logs" folder.
 
 3. Run project
 ```bash
