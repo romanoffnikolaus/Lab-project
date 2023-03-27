@@ -44,6 +44,8 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class MentorRegistrationSerializer(serializers.ModelSerializer):
+    password_confirm = serializers.CharField(
+        min_length=4, required=True, write_only=True)
     experience = serializers.ChoiceField(
             required=True,
             help_text='Каким видом преподавания вы занимались раньше?',
@@ -66,11 +68,35 @@ class MentorRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'password_confirm',
+            'is_mentor',
             'experience',
             'audience'
         )
-    def update(self, validated_data):
-        user = User.objects.update(**validated_data)
+    def validate(self, attrs):
+        password = attrs.get('password')
+        password_confirm = attrs.pop('password_confirm')
+        if password != password_confirm:
+            raise serializers.ValidationError('Пароли не совпадают')
+        return attrs
+
+    def create(self, validated_data):
+        user_data = {
+            'username': self.context.get('username'),
+            'first_name': self.context.get('first_name'),
+            'last_name': self.context.get('last_name'),
+            'email': self.context.get('email'),
+            'password': self.context.get('password'),
+            'is_mentor': True
+        }
+        user_data.update(validated_data)
+        user = User.objects.create_user(**user_data)
+        send_activation_code_celery.delay(user.email, user.activation_code)
         return user
 
 
